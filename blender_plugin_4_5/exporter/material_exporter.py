@@ -218,6 +218,23 @@ def get_roughness_texture(material):
                     return sanitize_filename(input_node.image.name)
     return None
 
+def get_emission_texture(material):
+    """Get emission texture image name from Principled BSDF Emission input.
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not material.use_nodes:
+        return None
+    for node in material.node_tree.nodes:
+        if node.type == 'BSDF_PRINCIPLED':
+            emission_input = node.inputs.get('Emission')
+            if emission_input and emission_input.links:
+                input_node = emission_input.links[0].from_node
+                if input_node.type == 'TEX_IMAGE' and input_node.image:
+                    return sanitize_filename(input_node.image.name)
+    return None
+
 def roughness_to_shininess(roughness):
     """Convert roughness (0-1) to shininess (Ns) for MTL.
     
@@ -328,7 +345,7 @@ def export_material_to_mtl(blender_material, output_path, textures_dict=None, te
                     texture_filename = os.path.basename(texture_path)
                     f.write(f"map_Kd {texture_filename}\n")
             
-            # PBR maps (metallic, normal, AO, height, roughness)
+            # PBR maps (metallic, normal, AO, height, roughness, emission)
             if export_pbr_maps:
                 for map_name, mtl_key in [
                     (get_metallic_texture(blender_material), "map_Pm"),
@@ -336,6 +353,7 @@ def export_material_to_mtl(blender_material, output_path, textures_dict=None, te
                     (get_ao_texture(blender_material), "map_Ka"),
                     (get_height_texture(blender_material), "map_disp"),
                     (get_roughness_texture(blender_material), "map_Pr"),
+                    (get_emission_texture(blender_material), "map_Ke"),
                 ]:
                     if map_name:
                         texture_path = textures_dict.get(map_name)
