@@ -75,6 +75,7 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
         box.prop(export_settings, "export_meshes", text="Export Meshes (OBJ)")
         box.prop(export_settings, "export_materials", text="Export Materials (MTL)")
         box.prop(export_settings, "export_textures", text="Export Textures")
+        box.prop(export_settings, "export_pbr_maps", text="Export PBR Maps")
         box.prop(export_settings, "export_scripts", text="Export Scripts")
         box.prop(export_settings, "generate_html", text="Generate HTML Wrapper")
         
@@ -165,6 +166,7 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
             'export_meshes': export_settings.export_meshes,
             'export_materials': export_settings.export_materials,
             'export_textures': export_settings.export_textures,
+            'export_pbr_maps': export_settings.export_pbr_maps,
             'export_scripts': export_settings.export_scripts,
             'generate_html': export_settings.generate_html
         }

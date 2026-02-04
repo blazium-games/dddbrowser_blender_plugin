@@ -39,6 +39,7 @@ class BLAZIUM_PT_export_panel(bpy.types.Panel):
         box.prop(export_settings, "export_meshes", text="Export Meshes (OBJ)")
         box.prop(export_settings, "export_materials", text="Export Materials (MTL)")
         box.prop(export_settings, "export_textures", text="Export Textures")
+        box.prop(export_settings, "export_pbr_maps", text="Export PBR Maps")
         box.prop(export_settings, "export_scripts", text="Export Scripts")
         box.prop(export_settings, "generate_html", text="Generate HTML Wrapper")
         

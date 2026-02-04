@@ -31,6 +31,12 @@ class BlaziumExportSettings(PropertyGroup):
         default=True,
     )
     
+    export_pbr_maps: BoolProperty(
+        name="Export PBR Maps",
+        description="Export PBR texture maps (metallic, normal, AO, height, roughness) in MTL files",
+        default=True,
+    )
+    
     export_scripts: BoolProperty(
         name="Export Scripts",
         description="Export script files",

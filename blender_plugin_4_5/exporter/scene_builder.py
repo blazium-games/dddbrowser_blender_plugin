@@ -121,7 +121,8 @@ def build_scene_json(scene_data, export_settings):
             all_materials,
             meshes_dir,  # Export MTL files to meshes directory
             textures_dict=textures_dict,
-            textures_dir=textures_dir  # Pass textures directory for path calculation
+            textures_dir=textures_dir,  # Pass textures directory for path calculation
+            export_pbr_maps=export_settings.get('export_pbr_maps', True)
         )
     
     # Export meshes

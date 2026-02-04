@@ -201,6 +201,23 @@ def get_ao_texture(material):
                 return sanitize_filename(node.image.name)
     return None
 
+def get_roughness_texture(material):
+    """Get roughness texture image name from Principled BSDF Roughness input.
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not getattr(material, 'use_nodes', True):
+        return None
+    for node in material.node_tree.nodes:
+        if node.type == 'BSDF_PRINCIPLED':
+            roughness_input = node.inputs.get('Roughness')
+            if roughness_input and roughness_input.links:
+                input_node = roughness_input.links[0].from_node
+                if input_node.type == 'TEX_IMAGE' and input_node.image:
+                    return sanitize_filename(input_node.image.name)
+    return None
+
 def roughness_to_shininess(roughness):
     """Convert roughness (0-1) to shininess (Ns) for MTL.
     
@@ -235,7 +252,7 @@ def get_alpha(material):
     
     return 1.0
 
-def export_material_to_mtl(blender_material, output_path, textures_dict=None, textures_dir=None):
+def export_material_to_mtl(blender_material, output_path, textures_dict=None, textures_dir=None, export_pbr_maps=True):
     """Export a Blender material to MTL format.
     
     Args:
@@ -243,6 +260,7 @@ def export_material_to_mtl(blender_material, output_path, textures_dict=None, te
         output_path: str - Directory to save MTL file (should be meshes_dir)
         textures_dict: dict - Mapping of texture names to filepaths
         textures_dir: str - Directory where textures are stored (same as output_path for co-location)
+        export_pbr_maps: bool - If True, write PBR map lines (metallic, normal, AO, height, roughness)
         
     Returns:
         str: Path to exported MTL file, or None if export failed
@@ -310,24 +328,26 @@ def export_material_to_mtl(blender_material, output_path, textures_dict=None, te
                     texture_filename = os.path.basename(texture_path)
                     f.write(f"map_Kd {texture_filename}\n")
             
-            # PBR maps (metallic, normal, AO, height)
-            for map_name, mtl_key in [
-                (get_metallic_texture(blender_material), "map_Pm"),
-                (get_normal_texture(blender_material), "norm"),
-                (get_ao_texture(blender_material), "map_Ka"),
-                (get_height_texture(blender_material), "map_disp"),
-            ]:
-                if map_name:
-                    texture_path = textures_dict.get(map_name)
-                    if texture_path:
-                        texture_filename = os.path.basename(texture_path)
-                        f.write(f"{mtl_key} {texture_filename}\n")
+            # PBR maps (metallic, normal, AO, height, roughness)
+            if export_pbr_maps:
+                for map_name, mtl_key in [
+                    (get_metallic_texture(blender_material), "map_Pm"),
+                    (get_normal_texture(blender_material), "norm"),
+                    (get_ao_texture(blender_material), "map_Ka"),
+                    (get_height_texture(blender_material), "map_disp"),
+                    (get_roughness_texture(blender_material), "map_Pr"),
+                ]:
+                    if map_name:
+                        texture_path = textures_dict.get(map_name)
+                        if texture_path:
+                            texture_filename = os.path.basename(texture_path)
+                            f.write(f"{mtl_key} {texture_filename}\n")
         
         return filepath
     except Exception:
         return None
 
-def export_all_materials(materials, output_path, textures_dict=None, textures_dir=None):
+def export_all_materials(materials, output_path, textures_dict=None, textures_dir=None, export_pbr_maps=True):
     """Export all materials to MTL files.
     
     Args:
@@ -335,6 +355,7 @@ def export_all_materials(materials, output_path, textures_dict=None, textures_di
         output_path: str - Directory to save MTL files (should be meshes_dir)
         textures_dict: dict - Mapping of texture names to filepaths
         textures_dir: str - Directory where textures are stored (same as output_path for co-location)
+        export_pbr_maps: bool - If True, write PBR map lines in MTL files
         
     Returns:
         dict: Mapping of material name to exported MTL filepath
@@ -343,7 +364,7 @@ def export_all_materials(materials, output_path, textures_dict=None, textures_di
     
     for material in materials:
         if material:
-            filepath = export_material_to_mtl(material, output_path, textures_dict, textures_dir)
+            filepath = export_material_to_mtl(material, output_path, textures_dict, textures_dir, export_pbr_maps=export_pbr_maps)
             if filepath:
                 material_name = sanitize_filename(material.name)
                 materials_dict[material_name] = filepath
