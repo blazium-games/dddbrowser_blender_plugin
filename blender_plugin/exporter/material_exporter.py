@@ -127,6 +127,80 @@ def get_diffuse_texture(material):
     
     return None
 
+def get_metallic_texture(material):
+    """Get metallic texture image name from Principled BSDF Metallic input.
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not material.use_nodes:
+        return None
+    for node in material.node_tree.nodes:
+        if node.type == 'BSDF_PRINCIPLED':
+            metallic_input = node.inputs.get('Metallic')
+            if metallic_input and metallic_input.links:
+                input_node = metallic_input.links[0].from_node
+                if input_node.type == 'TEX_IMAGE' and input_node.image:
+                    return sanitize_filename(input_node.image.name)
+    return None
+
+def get_normal_texture(material):
+    """Get normal map image name from Principled BSDF Normal input (via NORMAL_MAP or direct TEX_IMAGE).
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not material.use_nodes:
+        return None
+    for node in material.node_tree.nodes:
+        if node.type == 'BSDF_PRINCIPLED':
+            normal_input = node.inputs.get('Normal')
+            if not normal_input or not normal_input.links:
+                continue
+            input_node = normal_input.links[0].from_node
+            if input_node.type == 'NORMAL_MAP':
+                color_input = input_node.inputs.get('Color')
+                if color_input and color_input.links:
+                    tex_node = color_input.links[0].from_node
+                    if tex_node.type == 'TEX_IMAGE' and tex_node.image:
+                        return sanitize_filename(tex_node.image.name)
+            elif input_node.type == 'TEX_IMAGE' and input_node.image:
+                return sanitize_filename(input_node.image.name)
+    return None
+
+def get_height_texture(material):
+    """Get height/displacement texture image name from Displacement node Height input.
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not material.use_nodes:
+        return None
+    for node in material.node_tree.nodes:
+        if node.type == 'DISPLACEMENT':
+            height_input = node.inputs.get('Height')
+            if height_input and height_input.links:
+                input_node = height_input.links[0].from_node
+                if input_node.type == 'TEX_IMAGE' and input_node.image:
+                    return sanitize_filename(input_node.image.name)
+    return None
+
+def get_ao_texture(material):
+    """Get ambient occlusion texture by naming convention (image name contains 'ao' or 'occlusion').
+    
+    Returns:
+        str: Sanitized image name or None
+    """
+    if not material.use_nodes:
+        return None
+    name_lower = None
+    for node in material.node_tree.nodes:
+        if node.type == 'TEX_IMAGE' and node.image:
+            name_lower = node.image.name.lower()
+            if 'ao' in name_lower or 'occlusion' in name_lower:
+                return sanitize_filename(node.image.name)
+    return None
+
 def roughness_to_shininess(roughness):
     """Convert roughness (0-1) to shininess (Ns) for MTL.
     
@@ -235,6 +309,19 @@ def export_material_to_mtl(blender_material, output_path, textures_dict=None, te
                     # This ensures paths are safe relative paths (no ".." components)
                     texture_filename = os.path.basename(texture_path)
                     f.write(f"map_Kd {texture_filename}\n")
+            
+            # PBR maps (metallic, normal, AO, height)
+            for map_name, mtl_key in [
+                (get_metallic_texture(blender_material), "map_Pm"),
+                (get_normal_texture(blender_material), "norm"),
+                (get_ao_texture(blender_material), "map_Ka"),
+                (get_height_texture(blender_material), "map_disp"),
+            ]:
+                if map_name:
+                    texture_path = textures_dict.get(map_name)
+                    if texture_path:
+                        texture_filename = os.path.basename(texture_path)
+                        f.write(f"{mtl_key} {texture_filename}\n")
         
         return filepath
     except Exception:
