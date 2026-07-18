@@ -76,7 +76,7 @@ def export_mesh_to_obj_simple(blender_object, output_path, materials_dict=None):
         except Exception as e:
             print(f"Error restoring selection: {e}")
 
-def export_all_meshes(objects, output_path, materials_dict=None):
+def export_all_meshes(objects, output_path, materials_dict=None, export_obj_materials=False):
     """Export all mesh objects to OBJ files using Blender's built-in exporter."""
     meshes_dict = {}
     
@@ -109,10 +109,11 @@ def export_all_meshes(objects, output_path, materials_dict=None):
                 
                 try:
                     # Blender 4.0+: use wm.obj_export
+                    # Prefer custom MTL from material_exporter (export_obj_materials=False).
                     bpy.ops.wm.obj_export(
                         filepath=filepath,
                         export_selected_objects=True,
-                        export_materials=True,
+                        export_materials=export_obj_materials,
                         export_normals=True,
                         export_uv=True,
                         # FIX IS HERE: Changed from 'triangular' to 'triangulated'

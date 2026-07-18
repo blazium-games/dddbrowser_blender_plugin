@@ -161,13 +161,18 @@ def export_light_instance(blender_light, transform=None):
                 else:
                     light_props['shadowOrthoSize'] = 100.0
     
-    # Build instance dict
+    # Build instance dict (scale must be > 0 per schema scaleVec3)
+    safe_scale = {
+        'x': max(1e-6, float(scale['x'])),
+        'y': max(1e-6, float(scale['y'])),
+        'z': max(1e-6, float(scale['z'])),
+    }
     instance = {
         'id': blender_light.name.replace(' ', '_').replace('.', '_'),
         'type': scene_light_type,
         'position': position,
         'rotation': rotation,
-        'scale': scale,
+        'scale': safe_scale,
         'light': light_props
     }
     

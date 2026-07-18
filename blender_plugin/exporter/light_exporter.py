@@ -46,18 +46,27 @@ def export_light_instance(blender_light, transform=None):
     light_props = {}
     
     # Color (RGB 0-1)
-    light_color = light_data.color
+    # Blender 4.5: support temperature and exposure (see Python API release notes)
+    light_color = list(light_data.color)
+    if getattr(light_data, 'use_temperature', False) and hasattr(light_data, 'temperature_color'):
+        temp = light_data.temperature_color
+        light_color[0] *= temp[0]
+        light_color[1] *= temp[1]
+        light_color[2] *= temp[2]
     light_props['color'] = {
-        'x': light_color.r,
-        'y': light_color.g,
-        'z': light_color.b
+        'x': light_color[0],
+        'y': light_color[1],
+        'z': light_color[2]
     }
     
-    # Intensity (Energy in Blender)
-    # Blender's energy is typically 0-100+, scene format expects > 0
-    energy = light_data.energy
+    # Intensity: Blender 4.5 uses energy * 2^exposure; area lights: if not normalize, scale by area
+    energy = light_data.energy * math.pow(2.0, getattr(light_data, 'exposure', 0.0))
+    if light_type == 'AREA' and not getattr(light_data, 'normalize', True):
+        try:
+            energy *= light_data.area(matrix_world=blender_light.matrix_world)
+        except (TypeError, AttributeError):
+            pass
     if light_type == 'SUN':
-        # Sun lights often have higher energy values
         light_props['intensity'] = max(0.1, energy / 10.0)
     else:
         light_props['intensity'] = max(0.1, energy)
@@ -152,13 +161,18 @@ def export_light_instance(blender_light, transform=None):
                 else:
                     light_props['shadowOrthoSize'] = 100.0
     
-    # Build instance dict
+    # Build instance dict (scale must be > 0 per schema scaleVec3)
+    safe_scale = {
+        'x': max(1e-6, float(scale['x'])),
+        'y': max(1e-6, float(scale['y'])),
+        'z': max(1e-6, float(scale['z'])),
+    }
     instance = {
         'id': blender_light.name.replace(' ', '_').replace('.', '_'),
         'type': scene_light_type,
         'position': position,
         'rotation': rotation,
-        'scale': scale,
+        'scale': safe_scale,
         'light': light_props
     }
     

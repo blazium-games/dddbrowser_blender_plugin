@@ -6,7 +6,7 @@ from itertools import groupby
 bl_info = {
     "name": "Blazium Scene Exporter",
     "author": "DDDBrowser Team",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (3, 6, 0),
     "location": "Properties > Scene > Blazium Scene Export",
     "description": "Export Blender scenes to Blazium/DDDBrowser format (OBJ, MTL, JSON)",
@@ -106,6 +106,24 @@ def register_scene_properties():
         default=""
     )
 
+    bpy.types.Scene.blazium_skybox_uri = bpy.props.StringProperty(
+        name="Skybox URI",
+        description="Equirectangular skybox URI (LDR or Radiance .hdr)",
+        default=""
+    )
+
+    bpy.types.Scene.blazium_export_bounds = bpy.props.BoolProperty(
+        name="Export Movement Bounds",
+        description="Emit movementBounds from numeric scene properties",
+        default=False,
+    )
+    bpy.types.Scene.blazium_bounds_min_x = bpy.props.FloatProperty(name="Bounds Min X", default=-100.0)
+    bpy.types.Scene.blazium_bounds_min_y = bpy.props.FloatProperty(name="Bounds Min Y", default=-100.0)
+    bpy.types.Scene.blazium_bounds_min_z = bpy.props.FloatProperty(name="Bounds Min Z", default=-100.0)
+    bpy.types.Scene.blazium_bounds_max_x = bpy.props.FloatProperty(name="Bounds Max X", default=100.0)
+    bpy.types.Scene.blazium_bounds_max_y = bpy.props.FloatProperty(name="Bounds Max Y", default=100.0)
+    bpy.types.Scene.blazium_bounds_max_z = bpy.props.FloatProperty(name="Bounds Max Z", default=100.0)
+
 
 def unregister_scene_properties():
     """Unregister custom scene properties."""
@@ -119,6 +137,14 @@ def unregister_scene_properties():
     del bpy.types.Scene.blazium_scene_version
     del bpy.types.Scene.blazium_schema_version
     del bpy.types.Scene.blazium_thumbnail_url
+    del bpy.types.Scene.blazium_skybox_uri
+    del bpy.types.Scene.blazium_export_bounds
+    del bpy.types.Scene.blazium_bounds_min_x
+    del bpy.types.Scene.blazium_bounds_min_y
+    del bpy.types.Scene.blazium_bounds_min_z
+    del bpy.types.Scene.blazium_bounds_max_x
+    del bpy.types.Scene.blazium_bounds_max_y
+    del bpy.types.Scene.blazium_bounds_max_z
 
 
 def register():

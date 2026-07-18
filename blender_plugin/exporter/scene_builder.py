@@ -8,6 +8,7 @@ from . import material_exporter
 from . import texture_exporter
 from . import light_exporter
 from . import transform_utils
+from . import authoring
 
 def sanitize_filename(name):
     """Sanitize a filename to be safe for filesystem."""
@@ -125,13 +126,14 @@ def build_scene_json(scene_data, export_settings):
             export_pbr_maps=export_settings.get('export_pbr_maps', True)
         )
     
-    # Export meshes
+    # Export meshes (custom MTL is source of truth; avoid dual MTL from OBJ exporter)
     meshes_dict = {}
     if export_settings.get('export_meshes', True) and mesh_objects:
         meshes_dict = mesh_exporter.export_all_meshes(
             mesh_objects,
             meshes_dir,
-            materials_dict=materials_dict
+            materials_dict=materials_dict,
+            export_obj_materials=False,
         )
     
     # Build assets array
@@ -177,6 +179,15 @@ def build_scene_json(scene_data, export_settings):
     # Build instances array
     instances = []
     
+    # Scripts (optional)
+    script_assets, instance_scripts = authoring.export_scripts(
+        objects,
+        export_dir,
+        base_url,
+        export_settings.get('export_scripts', False),
+    )
+    assets.extend(script_assets)
+
     # Model instances
     for obj in mesh_objects:
         # Check if this object was exported (using sanitized name)
@@ -184,21 +195,35 @@ def build_scene_json(scene_data, export_settings):
         if obj_name_sanitized in meshes_dict:
             asset_id = obj_name_sanitized
             position, rotation, scale = transform_utils.get_object_transform(obj)
-            
+            # scaleVec3 requires exclusiveMinimum 0
+            safe_scale = {
+                'x': max(1e-6, float(scale['x'])),
+                'y': max(1e-6, float(scale['y'])),
+                'z': max(1e-6, float(scale['z'])),
+            }
+
             instance = {
                 'id': asset_id,
                 'type': 'model',
                 'asset': asset_id,
                 'position': position,
                 'rotation': rotation,
-                'scale': scale
+                'scale': safe_scale,
             }
-            
+            collider = authoring.collider_for_object(obj)
+            if collider:
+                instance['collider'] = collider
+            if asset_id in instance_scripts:
+                instance['script'] = instance_scripts[asset_id]
+
             instances.append(instance)
     
     # Light instances
     light_instances = light_exporter.export_all_lights(light_objects)
     instances.extend(light_instances)
+
+    # Portal empties
+    instances.extend(authoring.export_portals(objects))
     
     # Build scene JSON
     scene_json = {
@@ -207,6 +232,19 @@ def build_scene_json(scene_data, export_settings):
         'schemaVersion': export_settings.get('schema_version', '1.0'),
         'assets': assets
     }
+
+    # Spawn / bounds / skybox (scene-level authoring)
+    blender_scene = scene_data.get('scene')
+    if blender_scene is not None:
+        spawn = authoring.get_spawn(objects, blender_scene)
+        if spawn:
+            scene_json['spawn'] = spawn
+        bounds = authoring.get_movement_bounds(objects, blender_scene)
+        if bounds:
+            scene_json['movementBounds'] = bounds
+        skybox = authoring.get_skybox(objects, blender_scene, base_url, export_dir)
+        if skybox:
+            scene_json['skybox'] = skybox
     
     # Add optional metadata
     if export_settings.get('scene_description'):

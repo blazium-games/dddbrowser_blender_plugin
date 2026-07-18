@@ -58,7 +58,7 @@ def export_mesh_to_obj_simple(blender_object, output_path, materials_dict=None):
             obj.select_set(True)
         bpy.context.view_layer.objects.active = old_active
 
-def export_all_meshes(objects, output_path, materials_dict=None):
+def export_all_meshes(objects, output_path, materials_dict=None, export_obj_materials=False):
     """Export all mesh objects to OBJ files using Blender's built-in exporter.
     
     Note: This function exports meshes one at a time by temporarily selecting them.
@@ -68,6 +68,7 @@ def export_all_meshes(objects, output_path, materials_dict=None):
         objects: list of bpy.types.Object
         output_path: str - Directory to save OBJ files
         materials_dict: dict - Mapping of material names to MTL filepaths (not used with built-in exporter)
+        export_obj_materials: bool - When False, prefer custom MTL from material_exporter
         
     Returns:
         dict: Mapping of object name/asset ID to exported OBJ filepath
@@ -100,11 +101,11 @@ def export_all_meshes(objects, output_path, materials_dict=None):
                 os.makedirs(output_path, exist_ok=True)
                 
                 try:
-                    # Use Blender's built-in OBJ exporter
+                    # Use Blender's built-in OBJ exporter (3.6)
                     bpy.ops.export_scene.obj(
                         filepath=filepath,
                         use_selection=True,
-                        use_materials=True,
+                        use_materials=export_obj_materials,
                         use_normals=True,
                         use_uvs=True,
                         use_triangles=True,
