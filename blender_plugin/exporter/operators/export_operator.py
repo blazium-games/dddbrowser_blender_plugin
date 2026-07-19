@@ -6,6 +6,7 @@ import os
 from bpy.props import StringProperty
 from bpy_extras.io_utils import ExportHelper
 from .. import scene_builder
+from .. import schema_validator
 
 
 class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
@@ -28,7 +29,8 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
         name="Export Directory",
         description="Directory to export assets to",
         default="",
-        subtype='DIR_PATH'
+        subtype='DIR_PATH',
+        options={'PATH_SUPPORTS_BLEND_RELATIVE'}
     )
     
     def invoke(self, context, event):
@@ -77,6 +79,7 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
         box.prop(export_settings, "export_pbr_maps", text="Export PBR Maps")
         box.prop(export_settings, "export_scripts", text="Export Scripts")
         box.prop(export_settings, "generate_html", text="Generate HTML Wrapper")
+        box.prop(export_settings, "validate_schema", text="Validate Schema")
         
         layout.separator()
         
@@ -147,7 +150,8 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
         objects = list(scene.objects)
         
         scene_data = {
-            'objects': objects
+            'objects': objects,
+            'scene': scene,
         }
         
         # Prepare export settings dict
@@ -167,12 +171,21 @@ class EXPORT_SCENE_OT_blazium_scene(bpy.types.Operator, ExportHelper):
             'export_textures': export_settings.export_textures,
             'export_pbr_maps': export_settings.export_pbr_maps,
             'export_scripts': export_settings.export_scripts,
-            'generate_html': export_settings.generate_html
+            'generate_html': export_settings.generate_html,
+            'validate_schema': export_settings.validate_schema,
         }
         
         try:
             # Build scene JSON
             scene_json = scene_builder.build_scene_json(scene_data, export_settings_dict)
+
+            if export_settings_dict.get('validate_schema', True):
+                ok, errors = schema_validator.validate_scene_json(scene_json)
+                if not ok:
+                    self.report({'ERROR'}, f"Schema validation failed: {errors[0]}")
+                    for err in errors[:5]:
+                        print(f"Blazium schema: {err}")
+                    return {'CANCELLED'}
             
             # Write scene JSON to the selected filepath
             if not scene_builder.write_scene_json(scene_json, self.filepath):

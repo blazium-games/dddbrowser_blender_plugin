@@ -1,0 +1,750 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blazium Scene",
+  "type": "object",
+  "required": ["name", "version", "schemaVersion", "assets"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "schemaVersion": { "type": "string" },
+    "id": { "type": "string", "maxLength": 256 },
+    "author": { "type": "string" },
+    "rating": {
+      "type": "string",
+      "enum": ["GENERAL", "MODERATE", "ADULT"]
+    },
+    "thumbnail": { "type": "string", "format": "uri" },
+    "manifestUrl": { "type": "string", "format": "uri" },
+    "world": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 256 },
+        "position": { "$ref": "#/$defs/vec3" }
+      },
+      "additionalProperties": false
+    },
+    "spawn": { "$ref": "#/$defs/vec3" },
+    "movementBounds": {
+      "type": "object",
+      "properties": {
+        "min": { "$ref": "#/$defs/vec3" },
+        "max": { "$ref": "#/$defs/vec3" }
+      },
+      "required": ["min", "max"],
+      "additionalProperties": false
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 0,
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "instances": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/instance" }
+    },
+    "gamemode": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["file"],
+      "additionalProperties": false
+    },
+    "skybox": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "Equirectangular sky (LDR PNG/JPG/TGA or Radiance .hdr). Mutually exclusive with faces."
+        },
+        "faces": {
+          "type": "object",
+          "description": "Six-face cubemap (LDR or .hdr). Mutually exclusive with uri.",
+          "properties": {
+            "px": { "type": "string", "format": "uri" },
+            "nx": { "type": "string", "format": "uri" },
+            "py": { "type": "string", "format": "uri" },
+            "ny": { "type": "string", "format": "uri" },
+            "pz": { "type": "string", "format": "uri" },
+            "nz": { "type": "string", "format": "uri" }
+          },
+          "required": ["px", "nx", "py", "ny", "pz", "nz"],
+          "additionalProperties": false
+        },
+        "rotation": {
+          "$ref": "#/$defs/vec3"
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["uri"], "not": { "required": ["faces"] } },
+        { "required": ["faces"], "not": { "required": ["uri"] } }
+      ]
+    },
+    "autosaveNotification": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "font": { "type": "string" },
+        "color": { "$ref": "#/$defs/vec3" }
+      },
+      "additionalProperties": false
+    },
+    "gameType": {
+      "type": "string",
+      "enum": ["FPS", "NONE"]
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec2": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "scaleVec3": {
+      "allOf": [
+        { "$ref": "#/$defs/vec3" },
+        {
+          "properties": {
+            "x": { "type": "number", "exclusiveMinimum": 0 },
+            "y": { "type": "number", "exclusiveMinimum": 0 },
+            "z": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      ]
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "type", "uri", "mediaType"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 256 },
+        "type": {
+          "type": "string",
+          "enum": ["model", "script", "material", "texture", "textbox", "picturebox", "audio", "font"]
+        },
+        "textbox": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string", "maxLength": 1048576 },
+            "title": { "type": "string" },
+            "font": { "type": "string" },
+            "size": { "type": "number", "exclusiveMinimum": 0 },
+            "color": { "$ref": "#/$defs/vec3" }
+          },
+          "required": ["text"],
+          "additionalProperties": false
+        },
+        "picturebox": {
+          "type": "object",
+          "properties": {
+            "texture": { "type": "string" },
+            "width": { "type": "number", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["texture", "width", "height"],
+          "additionalProperties": false
+        },
+        "audio": {
+          "type": "object",
+          "properties": {
+            "format": { "type": "string", "enum": ["wav", "ogg"] },
+            "ambient": { "type": "boolean" }
+          },
+          "required": ["format"],
+          "additionalProperties": false
+        },
+        "font": {
+          "type": "object",
+          "properties": {
+            "size": { "type": "number", "exclusiveMinimum": 0 },
+            "style": { "type": "string", "enum": ["normal", "bold", "italic"] }
+          },
+          "additionalProperties": false
+        },
+        "uri": { "type": "string", "format": "uri" },
+        "mediaType": { "type": "string" },
+        "collider": { "$ref": "#/$defs/collider" },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "Hex-encoded SHA-256 of the asset file bytes. Recommended for type script (.luau); when present, the client rejects the asset on mismatch."
+        }
+      },
+      "additionalProperties": false
+    },
+    "instance": {
+      "type": "object",
+      "required": ["id", "position", "rotation", "scale"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 256 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "model",
+            "pointLight",
+            "directionalLight",
+            "spotLight",
+            "portal",
+            "textbox",
+            "picturebox",
+            "audio",
+            "autosaveVolume",
+            "lookAtVolume",
+            "lookedAtVolume",
+            "singleTriggerVolume",
+            "multiTriggerVolume",
+            "cooldownTriggerVolume",
+            "exitTriggerVolume",
+            "stayTriggerVolume",
+            "timedEntryTriggerVolume",
+            "counterTriggerVolume",
+            "sequenceTriggerVolume",
+            "toggleTriggerVolume",
+            "teleportVolume",
+            "interactionVolume"
+          ],
+          "default": "model"
+        },
+        "asset": { "type": "string" },
+        "position": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/vec3" },
+        "scale": { "$ref": "#/$defs/scaleVec3" },
+        "script": { "$ref": "#/$defs/instanceScript" },
+        "light": { "$ref": "#/$defs/lightProperties" },
+        "portal": { "$ref": "#/$defs/portalProperties" },
+        "textbox": { "$ref": "#/$defs/textboxProperties" },
+        "picturebox": { "$ref": "#/$defs/pictureboxProperties" },
+        "audio": { "$ref": "#/$defs/audioProperties" },
+        "collider": { "$ref": "#/$defs/collider" },
+        "autosaveVolume": { "$ref": "#/$defs/autosaveVolumeProperties" },
+        "lookAtVolume": { "$ref": "#/$defs/lookAtVolumeProperties" },
+        "lookedAtVolume": { "$ref": "#/$defs/lookedAtVolumeProperties" },
+        "singleTriggerVolume": { "$ref": "#/$defs/singleTriggerVolumeProperties" },
+        "multiTriggerVolume": { "$ref": "#/$defs/multiTriggerVolumeProperties" },
+        "cooldownTriggerVolume": { "$ref": "#/$defs/cooldownTriggerVolumeProperties" },
+        "exitTriggerVolume": { "$ref": "#/$defs/exitTriggerVolumeProperties" },
+        "stayTriggerVolume": { "$ref": "#/$defs/stayTriggerVolumeProperties" },
+        "timedEntryTriggerVolume": { "$ref": "#/$defs/timedEntryTriggerVolumeProperties" },
+        "counterTriggerVolume": { "$ref": "#/$defs/counterTriggerVolumeProperties" },
+        "sequenceTriggerVolume": { "$ref": "#/$defs/sequenceTriggerVolumeProperties" },
+        "toggleTriggerVolume": { "$ref": "#/$defs/toggleTriggerVolumeProperties" },
+        "teleportVolume": { "$ref": "#/$defs/teleportVolumeProperties" },
+        "interactionVolume": { "$ref": "#/$defs/interactionVolumeProperties" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "model" } }
+          },
+          "then": {
+            "required": ["asset"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "enum": ["pointLight", "directionalLight", "spotLight"] } }
+          },
+          "then": {
+            "required": ["light"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "portal" } }
+          },
+          "then": {
+            "required": ["portal"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "textbox" } }
+          },
+          "then": {
+            "required": ["textbox"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "picturebox" } }
+          },
+          "then": {
+            "required": ["picturebox"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "audio" } }
+          },
+          "then": {
+            "required": ["audio"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "autosaveVolume" } }
+          },
+          "then": {
+            "required": ["autosaveVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "lookAtVolume" } }
+          },
+          "then": {
+            "required": ["lookAtVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "lookedAtVolume" } }
+          },
+          "then": {
+            "required": ["lookedAtVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "singleTriggerVolume" } }
+          },
+          "then": {
+            "required": ["singleTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "multiTriggerVolume" } }
+          },
+          "then": {
+            "required": ["multiTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "cooldownTriggerVolume" } }
+          },
+          "then": {
+            "required": ["cooldownTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "exitTriggerVolume" } }
+          },
+          "then": {
+            "required": ["exitTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "stayTriggerVolume" } }
+          },
+          "then": {
+            "required": ["stayTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "timedEntryTriggerVolume" } }
+          },
+          "then": {
+            "required": ["timedEntryTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "counterTriggerVolume" } }
+          },
+          "then": {
+            "required": ["counterTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "sequenceTriggerVolume" } }
+          },
+          "then": {
+            "required": ["sequenceTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "toggleTriggerVolume" } }
+          },
+          "then": {
+            "required": ["toggleTriggerVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "teleportVolume" } }
+          },
+          "then": {
+            "required": ["teleportVolume"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "interactionVolume" } }
+          },
+          "then": {
+            "required": ["interactionVolume"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "instanceScript": {
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lightProperties": {
+      "type": "object",
+      "properties": {
+        "color": { "$ref": "#/$defs/vec3" },
+        "intensity": { "type": "number", "exclusiveMinimum": 0 },
+        "enabled": { "type": "boolean" },
+        "range": { "type": "number", "exclusiveMinimum": 0 },
+        "attenuation": {
+          "type": "object",
+          "properties": {
+            "constant": { "type": "number", "minimum": 0 },
+            "linear": { "type": "number", "minimum": 0 },
+            "quadratic": { "type": "number", "minimum": 0 }
+          },
+          "required": ["constant", "linear", "quadratic"],
+          "additionalProperties": false
+        },
+        "direction": { "$ref": "#/$defs/vec3" },
+        "cutoff": { "type": "number", "minimum": 0, "maximum": 90 },
+        "outerCutoff": { "type": "number", "minimum": 0, "maximum": 90 },
+        "shadowEnabled": { "type": "boolean" },
+        "shadowBias": { "type": "number", "minimum": 0 },
+        "shadowMapResolution": { "type": "number", "minimum": 256, "maximum": 4096 },
+        "shadowOrthoSize": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "portalProperties": {
+      "type": "object",
+      "required": ["destinationUrl"],
+      "properties": {
+        "destinationUrl": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "default": false
+        },
+        "manualTrigger": {
+          "type": "boolean",
+          "default": true
+        },
+        "scriptTrigger": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "textboxProperties": {
+      "type": "object",
+      "required": ["asset"],
+      "properties": {
+        "asset": {
+          "type": "string"
+        },
+        "font": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pictureboxProperties": {
+      "type": "object",
+      "required": ["asset"],
+      "properties": {
+        "asset": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "audioProperties": {
+      "type": "object",
+      "required": ["asset"],
+      "properties": {
+        "asset": {
+          "type": "string"
+        },
+        "loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1.0
+        },
+        "autoPlay": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "autosaveVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "singleUse": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    },
+    "lookAtVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "singleUse": { "type": "boolean", "default": false },
+        "cooldownSeconds": { "type": "number", "minimum": 0, "default": 0 },
+        "fovDegrees": { "type": "number", "minimum": 0, "maximum": 180, "default": 30 }
+      },
+      "required": ["eventName"],
+      "additionalProperties": false
+    },
+    "lookedAtVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "targetInstanceId": { "type": "string", "minLength": 1 },
+        "singleUse": { "type": "boolean", "default": false },
+        "cooldownSeconds": { "type": "number", "minimum": 0, "default": 0 },
+        "fovDegrees": { "type": "number", "minimum": 0, "maximum": 180, "default": 30 }
+      },
+      "required": ["eventName", "targetInstanceId"],
+      "additionalProperties": false
+    },
+    "singleTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 }
+      },
+      "required": ["eventName"],
+      "additionalProperties": false
+    },
+    "multiTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "maxFires": { "type": "integer", "minimum": 0, "default": 0 },
+        "autoRemoveOnFire": { "type": "boolean", "default": false }
+      },
+      "required": ["eventName"],
+      "additionalProperties": false
+    },
+    "cooldownTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "cooldownSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "maxFires": { "type": "integer", "minimum": 0, "default": 0 }
+      },
+      "required": ["eventName", "cooldownSeconds"],
+      "additionalProperties": false
+    },
+    "exitTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 }
+      },
+      "required": ["eventName"],
+      "additionalProperties": false
+    },
+    "stayTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "stayInterval": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "required": ["eventName", "stayInterval"],
+      "additionalProperties": false
+    },
+    "timedEntryTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "requiredStayTime": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "required": ["eventName", "requiredStayTime"],
+      "additionalProperties": false
+    },
+    "counterTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "counter_word": { "type": "string", "minLength": 1 },
+        "required_count": { "type": "integer", "minimum": 1 },
+        "auto_reset_after_fire": { "type": "boolean", "default": false },
+        "fire_once_when_reached": { "type": "boolean", "default": false }
+      },
+      "required": ["counter_word", "required_count"],
+      "additionalProperties": false
+    },
+    "sequenceTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "sequence_group_id": { "type": "string", "minLength": 1 },
+        "sequence_index": { "type": "integer", "minimum": 0 },
+        "reset_if_wrong": { "type": "boolean", "default": true },
+        "eventName": { "type": "string" }
+      },
+      "required": ["sequence_group_id", "sequence_index"],
+      "additionalProperties": false
+    },
+    "toggleTriggerVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "is_on": { "type": "boolean", "default": false },
+        "on_activate_event": { "type": "string" },
+        "on_deactivate_event": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "interactionVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string", "minLength": 1 },
+        "action": { "type": "string", "minLength": 1 }
+      },
+      "required": ["eventName", "action"],
+      "additionalProperties": false
+    },
+    "teleportVolumeProperties": {
+      "type": "object",
+      "properties": {
+        "target_position": { "$ref": "#/$defs/vec3" },
+        "keep_velocity": { "type": "boolean", "default": false }
+      },
+      "required": ["target_position"],
+      "additionalProperties": false
+    },
+    "collider": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["box", "capsule", "sphere", "cylinder"]
+        },
+        "box": {
+          "type": "object",
+          "properties": {
+            "size": { "$ref": "#/$defs/vec3" }
+          },
+          "required": ["size"],
+          "additionalProperties": false
+        },
+        "capsule": {
+          "type": "object",
+          "properties": {
+            "halfHeight": { "type": "number", "exclusiveMinimum": 0 },
+            "radius": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["halfHeight", "radius"],
+          "additionalProperties": false
+        },
+        "sphere": {
+          "type": "object",
+          "properties": {
+            "radius": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["radius"],
+          "additionalProperties": false
+        },
+        "cylinder": {
+          "type": "object",
+          "properties": {
+            "halfHeight": { "type": "number", "exclusiveMinimum": 0 },
+            "radius": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["halfHeight", "radius"],
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "box" } }
+          },
+          "then": {
+            "required": ["box"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "capsule" } }
+          },
+          "then": {
+            "required": ["capsule"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "sphere" } }
+          },
+          "then": {
+            "required": ["sphere"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "cylinder" } }
+          },
+          "then": {
+            "required": ["cylinder"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

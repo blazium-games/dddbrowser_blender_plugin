@@ -30,6 +30,17 @@ class BLAZIUM_PT_export_panel(bpy.types.Panel):
         box.prop(scene, "blazium_scene_version")
         box.prop(scene, "blazium_schema_version")
         box.prop(scene, "blazium_thumbnail_url")
+        box.prop(scene, "blazium_skybox_uri")
+        box.prop(scene, "blazium_export_bounds")
+        if scene.blazium_export_bounds:
+            row = box.row(align=True)
+            row.prop(scene, "blazium_bounds_min_x", text="Min X")
+            row.prop(scene, "blazium_bounds_min_y", text="Y")
+            row.prop(scene, "blazium_bounds_min_z", text="Z")
+            row = box.row(align=True)
+            row.prop(scene, "blazium_bounds_max_x", text="Max X")
+            row.prop(scene, "blazium_bounds_max_y", text="Y")
+            row.prop(scene, "blazium_bounds_max_z", text="Z")
         
         layout.separator()
         
@@ -40,8 +51,10 @@ class BLAZIUM_PT_export_panel(bpy.types.Panel):
         box.prop(export_settings, "export_materials", text="Export Materials (MTL)")
         box.prop(export_settings, "export_textures", text="Export Textures")
         box.prop(export_settings, "export_pbr_maps", text="Export PBR Maps")
-        box.prop(export_settings, "export_scripts", text="Export Scripts")
+        box.prop(export_settings, "export_scripts", text="Export Scripts (.luau)")
         box.prop(export_settings, "generate_html", text="Generate HTML Wrapper")
+        box.prop(export_settings, "validate_schema", text="Validate Schema")
+        box.label(text="Empties: blazium_role=SPAWN|PORTAL|BOUNDS_*|SKYBOX", icon='INFO')
         
         layout.separator()
         

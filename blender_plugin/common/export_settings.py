@@ -45,8 +45,14 @@ class BlaziumExportSettings(PropertyGroup):
     
     generate_html: BoolProperty(
         name="Generate HTML",
-        description="Generate HTML wrapper file",
-        default=False,
+        description="Generate HTML discovery wrapper (blazium-scene)",
+        default=True,
+    )
+
+    validate_schema: BoolProperty(
+        name="Validate Schema",
+        description="Validate exported JSON against vendored scene.schema.json",
+        default=True,
     )
     
     base_url: StringProperty(
@@ -59,6 +65,7 @@ class BlaziumExportSettings(PropertyGroup):
         name="Export Directory",
         description="Directory to export scene files",
         subtype='DIR_PATH',
+        options={'PATH_SUPPORTS_BLEND_RELATIVE'},
         default="",
     )
 
